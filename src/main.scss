@@ -1,0 +1,22 @@
+$theme-colors: (
+  "info": tomato,
+  "danger": teal,
+);
+
+.navbar {
+  background-color: #182b49;
+}
+.navbar-brand {
+  color: #fefefe;
+}
+.login {
+  margin-top: 2em;
+}
+#logo {
+  margin-right: 0.5em;
+}
+
+#main-img {
+  max-width: 40%;
+}
+@import "~bootstrap/scss/bootstrap";
