@@ -1,16 +1,28 @@
 import React from "react";
+import ReactDOM from "react-dom";
+import { BrowserRouter, Switch, Route } from "react-router-dom";
 import "./App.css";
 import "./main.scss";
 import Header from "./components/Header";
-import Guest from "./components/Guest";
+import HomeGuest from "./components/HomeGuest";
+import Home from "./components/Home";
 function App() {
   return (
-    <div className="App">
-      <Header></Header>
-      <div className="container-fluid">
-        <Guest></Guest>
+    <BrowserRouter>
+      <div className="App">
+        <Header></Header>
+        <div className="container-fluid">
+          <Switch>
+            <Route path="/" exact>
+              <HomeGuest />
+            </Route>
+            <Route path="/user" exact>
+              <Home />
+            </Route>
+          </Switch>
+        </div>
       </div>
-    </div>
+    </BrowserRouter>
   );
 }
 
