@@ -38,5 +38,6 @@ func GetUser(email string, c *mongo.Collection) (bool, User, error) {
 	}
 	log.Println(user.Email)
 	log.Println(user.Password)
+	log.Println(user.Username)
 	return true, user, nil
 }
