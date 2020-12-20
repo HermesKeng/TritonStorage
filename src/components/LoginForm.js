@@ -6,17 +6,16 @@ function LoginForm(props) {
   const [password, setPassword] = useState("");
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log(email);
-    console.log(password);
     try {
       const response = await Axios.post("http://localhost:8080/users", {
         Email: email,
         Password: password,
       });
       console.log(response);
-      if (response.data) {
+      if (response.data.IsSuccess) {
         console.log("User Successuflly Login");
-        console.log(response);
+        localStorage.setItem("tritonStorageToken", response.data.Token);
+        localStorage.setItem("tritonStorageUsername", response.data.Username);
         props.setLoggedIn(true);
       } else {
         console.log("Please check your account and password !");

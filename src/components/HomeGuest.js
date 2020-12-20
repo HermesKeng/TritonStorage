@@ -8,7 +8,7 @@ const responseGoogle = response => {
   console.log("success");
   console.log(response);
 };
-function HomeGuest() {
+function HomeGuest(props) {
   const [isRegister, setIsRegister] = useState();
   return (
     <>
@@ -38,9 +38,15 @@ function HomeGuest() {
             <div className="col-3"></div>
             <div className="col-6">
               {!isRegister ? (
-                <LoginForm setIsRegister={setIsRegister} />
+                <LoginForm
+                  setLoggedIn={props.setLoggedIn}
+                  setIsRegister={setIsRegister}
+                />
               ) : (
-                <RegisterForm setIsRegister={setIsRegister} />
+                <RegisterForm
+                  setLoggedIn={props.setLoggedIn}
+                  setIsRegister={setIsRegister}
+                />
               )}
             </div>
             <div className="col-3"></div>

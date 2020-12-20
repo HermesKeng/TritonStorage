@@ -15,9 +15,12 @@ function RegisterForm(props) {
         Email: email,
         Password: password,
       });
-      props.setLoggedIn(true);
-      console.log(response);
-      console.log("User was successfully created");
+      if (response.data.IsSuccess) {
+        props.setLoggedIn(true);
+        localStorage.setItem("tritonStorageToken", response.data.Token);
+        localStorage.setItem("tritonStorageUsername", response.data.Username);
+        console.log("User was successfully created");
+      }
     } catch (e) {
       console.log("error");
     }
