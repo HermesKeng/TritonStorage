@@ -5,3 +5,8 @@ type User struct{
 	Password string
 	Username string
 }
+
+type File struct{
+	Username string
+	Filename string
+}

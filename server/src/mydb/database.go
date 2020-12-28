@@ -41,3 +41,17 @@ func GetUser(email string, c *mongo.Collection) (bool, User, error) {
 	log.Println(user.Username)
 	return true, user, nil
 }
+
+func AddFile(filename string, username string, c *mongo.Collection) bool {
+	file := File{Filename: filename,Username: username} 
+	var result bson.M
+	err := c.FindOne(context.TODO(), bson.D{{"username", username},{"filename", filename}}).Decode(&result)
+	if err != nil{
+		if err == mongo.ErrNoDocuments {
+			c.InsertOne(context.TODO(), file)
+		}else{
+			return false
+		}
+	}
+	return true
+}
