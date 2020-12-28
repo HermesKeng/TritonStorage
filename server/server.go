@@ -11,6 +11,8 @@ import(
 	mongo "go.mongodb.org/mongo-driver/mongo"
 	"auth"
 	"mydb"
+	"bufio"
+	"os"
 )
 
 type JsonBody struct{
@@ -42,12 +44,76 @@ func main(){
 	http.HandleFunc("/", serveAppHandler(appBox))
 	http.HandleFunc("/users", serveUsers(appBox, client))
 	http.HandleFunc("/newuser", registerNewUser(appBox, client))
+	http.HandleFunc("/newfile", uploadFile(appBox, client))
 	log.Println("Server start at port 8080")
 	if err:= http.ListenAndServe(":8080", nil); err != nil{
 		log.Fatal(err)
 	}
 }
 
+func uploadFile(app *rice.Box, c *mongo.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		/*reqStr, err := ioutil.ReadAll(r.Body)
+		log.Println(string(reqStr))
+		if err != nil{
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}*/
+		collection := c.Database("tritonstorage").Collection("fileinfo")
+		
+		switch r.Method {
+			case "POST":
+				file, handler, err := r.FormFile("file")
+				if err!= nil{
+					log.Println("[file]Something wrong")
+				}
+				defer file.Close()
+				fmt.Printf("Uploaded File: %+v\n", handler.Filename)
+				fmt.Printf("File Size: %+v\n", handler.Size)
+				fmt.Printf("MIME Header: %+v\n", handler.Header)
+				
+				username := r.Header.Get("x-user")
+				isSuccess := mydb.AddFile(handler.Filename, username, collection)
+				if !isSuccess {
+					log.Println("data insert fail")
+					fmt.Fprintf(w, "false")
+				}
+				
+				fileContent := bufio.NewReader(file)
+				newfile, err := os.OpenFile("./filestorage/"+handler.Filename, os.O_CREATE|os.O_RDWR, 0755)
+				defer newfile.Close()
+				if err!=nil{
+					log.Println("file :"+handler.Filename+" Creation Error")
+					fmt.Fprintf(w, "false")
+					return
+				}
+				blockSize := 8152
+				for {
+					buffer := make([]byte, blockSize)
+					count, err := fileContent.Read(buffer)
+					if err!= nil{
+						fmt.Fprintf(w, "false")
+						return
+					}
+					newfile.Write(buffer[:count])
+					if count < blockSize{
+						break
+					}
+				}
+				log.Println("Finish Write File: "+ handler.Filename)
+				fmt.Fprintf(w, "true")
+				
+			case "GET":
+				indexFile, err := app.Open("index.html")
+				if err != nil {
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					return
+				}
+				log.Println("get request")
+				http.ServeContent(w, r, "index.html", time.Time{}, indexFile)
+		}
+	}
+}
 func registerNewUser(app *rice.Box, c *mongo.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqStr, err := ioutil.ReadAll(r.Body)
@@ -96,7 +162,6 @@ func serveUsers(app *rice.Box, c *mongo.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		reqStr, err := ioutil.ReadAll(r.Body)
-		log.Println(r.Cookie("token"))
 		if err != nil{
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -147,7 +212,6 @@ func serveAppHandler(app *rice.Box) http.HandlerFunc {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		log.Println("get request")
 		http.ServeContent(w, r, "index.html", time.Time{}, indexFile)
 	}
 }
