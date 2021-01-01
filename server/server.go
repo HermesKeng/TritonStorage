@@ -3,16 +3,20 @@ package main
 import(
 	"log"
 	"net/http"
-	"time"
 	"io/ioutil"
 	"encoding/json"
 	"fmt"
 	rice "github.com/GeertJohan/go.rice"
 	mongo "go.mongodb.org/mongo-driver/mongo"
+	chi "github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"auth"
 	"mydb"
 	"bufio"
 	"os"
+	"time"
+	"path/filepath"
+	"strings"
 )
 
 type JsonBody struct{
@@ -23,35 +27,73 @@ type JsonBody struct{
 
 
 func main(){
+	r := chi.NewRouter()
 	appBox, err := rice.FindBox("../build")
 	if err != nil{
-		log.Fatal(err)
+		log.Println("something wrong for rice box")
 	}
+	r.Use(middleware.RequestID)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.URLFormat)
+	
 	log.Println("Connect to MongoDb")
 	ctx, cancel, client  := mydb.NewDatabaseClient()
 	defer cancel()
-	if err != nil {
-		log.Fatal(err)
-	}
 	defer client.Disconnect(ctx)
 	/*databases, err := client.ListDatabaseNames(ctx, bson.M{})
 	if err != nil{
 		log.Fatal(err)
 	}
 	log.Println(databases)*/
-	
-	http.Handle("/static/", http.FileServer(appBox.HTTPBox()))
-	http.HandleFunc("/", serveAppHandler(appBox))
-	http.HandleFunc("/users", serveUsers(appBox, client))
-	http.HandleFunc("/newuser", registerNewUser(appBox, client))
-	http.HandleFunc("/newfile", uploadFile(appBox, client))
+	r.Get("/", serveAppHandler(appBox,r))
+	r.Get("/{userID}/files", getAllFile(client))
+	r.Get("/newfile", serveAppHandler(appBox,r))
+	r.Post("/users", serveUsers(client))
+	r.Post("/newuser", registerNewUser(client))
+	r.Post("/newfile", uploadFile(client))
 	log.Println("Server start at port 8080")
-	if err:= http.ListenAndServe(":8080", nil); err != nil{
-		log.Fatal(err)
-	}
+	workDir, _ := os.Getwd()
+	filesDir := http.Dir(filepath.Join(workDir, "../build/static"))
+	filesDir2 := http.Dir(filepath.Join(workDir, "../build"))
+	FileServer(r, "/static", filesDir)
+	FileServer(r, "/", filesDir2)
+	http.ListenAndServe(":8080", r)
 }
 
-func uploadFile(app *rice.Box, c *mongo.Client) http.HandlerFunc {
+func FileServer(r chi.Router, path string, root http.FileSystem) {
+	if strings.ContainsAny(path, "{}*") {
+		panic("FileServer does not permit any URL parameters.")
+	}
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+		rctx := chi.RouteContext(r.Context())
+		pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
+		fs := http.StripPrefix(pathPrefix, http.FileServer(root))
+		fs.ServeHTTP(w, r)
+	})
+}
+func getAllFile(c *mongo.Client) http.HandlerFunc {
+	
+	return func(w http.ResponseWriter, r *http.Request) {
+		username := r.Header.Get("x-user")
+		collection := c.Database("tritonstorage").Collection("fileinfo")
+		isSuccess, files := mydb.GetAllFilesByUsername(username, collection)
+		if !isSuccess {
+
+		}
+		jsonData, _ := json.Marshal(files)
+		//log.Println(string(jsonData))
+		fmt.Fprintf(w, string(jsonData))
+	}
+}
+func uploadFile(c *mongo.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		/*reqStr, err := ioutil.ReadAll(r.Body)
 		log.Println(string(reqStr))
@@ -102,19 +144,10 @@ func uploadFile(app *rice.Box, c *mongo.Client) http.HandlerFunc {
 				}
 				log.Println("Finish Write File: "+ handler.Filename)
 				fmt.Fprintf(w, "true")
-				
-			case "GET":
-				indexFile, err := app.Open("index.html")
-				if err != nil {
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-					return
-				}
-				log.Println("get request")
-				http.ServeContent(w, r, "index.html", time.Time{}, indexFile)
 		}
 	}
 }
-func registerNewUser(app *rice.Box, c *mongo.Client) http.HandlerFunc {
+func registerNewUser(c *mongo.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqStr, err := ioutil.ReadAll(r.Body)
 		if err != nil{
@@ -158,9 +191,10 @@ func registerNewUser(app *rice.Box, c *mongo.Client) http.HandlerFunc {
 /*	
 http.SetCookie(w, &http.Cookie{Name:"token",Value: tokenString, Expires: expireTime,})
 */
-func serveUsers(app *rice.Box, c *mongo.Client) http.HandlerFunc {
+func serveUsers(c *mongo.Client) http.HandlerFunc {
+	
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		log.Println("user")
 		reqStr, err := ioutil.ReadAll(r.Body)
 		if err != nil{
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -205,8 +239,9 @@ func serveUsers(app *rice.Box, c *mongo.Client) http.HandlerFunc {
 }
 
 
-func serveAppHandler(app *rice.Box) http.HandlerFunc {
+func serveAppHandler(app *rice.Box, m *chi.Mux) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println("okok")
 		indexFile, err := app.Open("index.html")
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
