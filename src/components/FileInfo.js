@@ -3,13 +3,17 @@ import React, { useEffect } from "react";
 function FileInfo(props) {
   return (
     <>
-      <tr key={props.id}>
-        <td scope="row">{props.id}</td>
+      <tr>
+        <td scope="row">{props.idx + 1}</td>
         <td>{props.filename}</td>
         <td>{props.type}</td>
         <td>{props.version}</td>
         <td>
-          <button type="button" className="btn btn-outline-triton-secondary">
+          <button
+            id={props.id}
+            type="button"
+            className="btn btn-outline-triton-secondary"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"

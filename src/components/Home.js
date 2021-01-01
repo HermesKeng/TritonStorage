@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FileInfo from "./FileInfo.js";
+import { Link } from "react-router-dom";
 import { GoogleLogout } from "react-google-login";
+import Axios from "axios";
 const fakeFile = [
   { id: 1, filename: "hello.txt", type: "document", version: 1 },
   { id: 2, filename: "happy.jpg", type: "image", version: 3 },
@@ -13,6 +15,25 @@ function Home(props) {
     localStorage.removeItem("tritonStorageToken");
     localStorage.removeItem("tritonStorageUsername");
   }
+  const [posts, setPosts] = useState([]);
+  useEffect(() => {
+    async function fetchPostData() {
+      try {
+        const response = await Axios.get(
+          `/${localStorage.getItem("tritonStorageUsername")}/files`,
+          {
+            headers: {
+              "x-user": localStorage.getItem("tritonStorageUsername"),
+            },
+          }
+        );
+        setPosts(response.data);
+      } catch (error) {
+        console.log("error or the request is cancelled");
+      }
+    }
+    fetchPostData();
+  }, []);
   return (
     <>
       <div className="row first">
@@ -21,6 +42,9 @@ function Home(props) {
         </div>
         <div className="col-4"></div>
         <div className="col-4">
+          <Link to="/newfile" type="button" className="btn btn-outline-triton">
+            Upload File
+          </Link>
           <button
             type="button"
             onClick={LogOut}
@@ -43,12 +67,14 @@ function Home(props) {
                 <th scope="col">Download</th>
               </tr>
             </thead>
-            {fakeFile.map(file => (
+            {posts.map((file, index) => (
               <FileInfo
-                id={file.id}
-                filename={file.filename}
-                type={file.type}
-                version={file.version}
+                id={file.Id}
+                idx={index}
+                key={file.Id}
+                filename={file.Filename}
+                type={file.Type}
+                version={1}
               />
             ))}
           </table>

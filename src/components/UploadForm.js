@@ -4,20 +4,25 @@ import Axios from "axios";
 function ComponentName() {
   const [fileData, setFile] = useState("");
   function handleUpload(e) {
-    console.log(e.target.files[0]);
     setFile(e.target.files[0]);
   }
 
   async function onSubmit() {
     let formdata = new FormData();
     formdata.append("file", fileData);
-    console.log(fileData);
+    formdata.append("username", localStorage.getItem("tritonStorageUsername"));
+    console.log(localStorage.getItem("tritonStorageUsername"));
     for (var key of formdata.entries()) {
-      console.log(key[0] + ", " + key[1].name);
+      console.log(key[0] + ", " + key[1]);
     }
     const response = await Axios.post(
       "http://localhost:8080/newfile",
-      formdata
+      formdata,
+      {
+        headers: {
+          "x-user": localStorage.getItem("tritonStorageUsername"),
+        },
+      }
     );
   }
   return (
