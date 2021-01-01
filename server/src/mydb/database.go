@@ -9,6 +9,8 @@ import(
 	mongo "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strings"
 )
 
 const connectionString = "mongodb+srv://mainUser:asdfghjkl@cluster0.7braz.mongodb.net/<dbname>?retryWrites=true&w=majority"
@@ -54,4 +56,26 @@ func AddFile(filename string, username string, c *mongo.Collection) bool {
 		}
 	}
 	return true
+}
+
+func GetAllFilesByUsername(username string, c *mongo.Collection) (bool ,[]File) {
+	cursor, err := c.Find(context.TODO(), bson.D{{"username", username}})
+	if err != nil {
+		log.Println(username+" Get All File Error!")
+		return false, nil;
+	}
+	var results []bson.M
+	if err = cursor.All(context.TODO(), &results); err!=nil {
+		log.Fatal(err)
+	}
+	files := make([]File, 0)
+	for _, result := range results {
+		id := result["_id"].(primitive.ObjectID).Hex()
+		filename := result["filename"].(string)
+		filetype := strings.Split(filename, ".")[1]
+		newFile := File{Id: id, Filename:filename, Type:filetype, Username:result["username"].(string)}
+		files = append(files, newFile)
+	}
+
+	return true, files
 }

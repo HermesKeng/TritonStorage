@@ -9,4 +9,10 @@ type User struct{
 type File struct{
 	Username string
 	Filename string
+	Type string
+	Id string
+}
+
+type FileGroup struct{
+	Files []File
 }
