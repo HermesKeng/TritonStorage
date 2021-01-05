@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
-import Button from "./Button";
+import { Link } from "react-router-dom";
 import logo from "../logo.svg";
 function Header() {
   return (
     <nav className="navbar">
-      <a className="navbar-brand" href="#">
+      <Link className="navbar-brand" to="/">
         <img
           src={logo}
           width="30"
@@ -14,7 +14,7 @@ function Header() {
           alt=""
         ></img>
         Triton Storage
-      </a>
+      </Link>
     </nav>
   );
 }
