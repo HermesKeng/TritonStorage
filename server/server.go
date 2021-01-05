@@ -17,6 +17,7 @@ import(
 	"time"
 	"path/filepath"
 	"strings"
+	"bytes"
 )
 
 type JsonBody struct{
@@ -48,6 +49,7 @@ func main(){
 	log.Println(databases)*/
 	r.Get("/", serveAppHandler(appBox,r))
 	r.Get("/{userID}/files", getAllFile(client))
+	r.Get("/{userID}/files/{id}", downloadFile(client))
 	r.Get("/newfile", serveAppHandler(appBox,r))
 	r.Post("/users", serveUsers(client))
 	r.Post("/newuser", registerNewUser(client))
@@ -61,6 +63,37 @@ func main(){
 	http.ListenAndServe(":8080", r)
 }
 
+func downloadFile(c *mongo.Client) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request){
+		log.Println(r.URL.Path)
+		paths:= strings.Split(r.URL.Path, "/") 
+		log.Println(paths[3])
+		collection := c.Database("tritonstorage").Collection("fileinfo")
+		isSuccess, filename := mydb.GetFilenameById(paths[3], collection)
+		if !isSuccess{
+			log.Println("database error cannot find the file or non exist")
+		}
+		targetFile, err:= os.Open("./filestorage/"+filename)
+
+		if err != nil{
+			log.Println(err)
+		}
+		reader := bufio.NewReader(targetFile)
+		data := bytes.NewBuffer(make([]byte,0))
+		for{
+			buffer := make([]byte, 8092)
+			count, err := reader.Read(buffer)
+			if err != nil{
+				log.Println("read file error")
+			}
+			data.Write(buffer[:count])
+			if count < 8092 {
+				break
+			}
+		}
+		w.Write(data.Bytes())
+	}
+}
 func FileServer(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer does not permit any URL parameters.")

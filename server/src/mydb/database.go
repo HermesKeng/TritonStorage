@@ -79,3 +79,16 @@ func GetAllFilesByUsername(username string, c *mongo.Collection) (bool ,[]File) 
 
 	return true, files
 }
+
+func GetFilenameById(_id string, c *mongo.Collection) (bool, string) {
+	var result bson.M
+	objID, _ := primitive.ObjectIDFromHex(_id)
+	err := c.FindOne(context.TODO(), bson.D{{"_id",objID}}).Decode(&result)
+	if err != nil {
+		log.Println(_id+" Get id File Error!")
+		return false, "";
+	}
+	
+	log.Println("found file by id :" + _id + "name: "+result["filename"].(string))
+	return true, result["filename"].(string)
+}
