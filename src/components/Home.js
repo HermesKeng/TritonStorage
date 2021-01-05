@@ -48,11 +48,7 @@ function Home(props) {
           </div>
           <div className="col-4"></div>
           <div className="col-4">
-            <Link
-              to="/newfile"
-              type="button"
-              className="btn btn-outline-triton"
-            >
+            <Link to="/newfile" className="btn btn-outline-triton">
               Upload File
             </Link>
             <button
