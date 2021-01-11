@@ -71,6 +71,7 @@ function Home(props) {
                   <th scope="col">Type</th>
                   <th scope="col">Version</th>
                   <th scope="col">Download</th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
               {posts.map((file, index) => (

@@ -14,10 +14,13 @@ import(
 	"mydb"
 	"bufio"
 	"os"
+	"os/signal"
 	"time"
 	"path/filepath"
 	"strings"
 	"bytes"
+	"syscall"
+	"context"
 )
 
 type JsonBody struct{
@@ -33,6 +36,7 @@ func main(){
 	if err != nil{
 		log.Println("something wrong for rice box")
 	}
+	
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -47,22 +51,87 @@ func main(){
 		log.Fatal(err)
 	}
 	log.Println(databases)*/
-	r.Get("/", serveAppHandler(appBox,r))
-	r.Get("/{userID}/files", getAllFile(client))
-	r.Get("/{userID}/files/{id}", downloadFile(client))
-	r.Get("/newfile", serveAppHandler(appBox,r))
-	r.Post("/users", serveUsers(client))
-	r.Post("/newuser", registerNewUser(client))
-	r.Post("/newfile", uploadFile(client))
-	log.Println("Server start at port 8080")
+	r.NotFound(notFound(appBox))
 	workDir, _ := os.Getwd()
 	filesDir := http.Dir(filepath.Join(workDir, "../build/static"))
 	filesDir2 := http.Dir(filepath.Join(workDir, "../build"))
+	r.Get("/", serveAppHandler(appBox,r))
+	r.Get("/*", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if _, err := os.Stat(fmt.Sprintf("%s", filesDir2) + req.RequestURI); os.IsNotExist(err) {
+			r.NotFoundHandler().ServeHTTP(w, req)
+		} else {
+			FileServer(r, "/", filesDir2)
+		}
+	}))
+	r.Get("/{userID}/files", getAllFile(client))
+	r.Get("/{userID}/files/{id}", downloadFile(client))
+	r.Get("/newfile", serveAppHandler(appBox,r))
+	
+	r.Post("/users", serveUsers(client))
+	r.Post("/newuser", registerNewUser(client))
+	r.Post("/newfile", uploadFile(client))
+	
+	r.Delete("/{userID}/files/{id}", deleteFile(client))
+
+	server := &http.Server{
+		Addr: ":8080",
+		Handler : r,
+	}
+	log.Println("Server start at port 8080")
 	FileServer(r, "/static", filesDir)
-	FileServer(r, "/", filesDir2)
-	http.ListenAndServe(":8080", r)
+	go func(){
+		if err:= server.ListenAndServe(); err !=nil && err!= http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	//gracefully shutdown start
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutdown")
+	serCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err:= server.Shutdown(serCtx); err!=nil{
+		log.Fatal("Server Shutdown: ", err)
+	}
+	log.Println("Server exiting")
+
 }
 
+func deleteFile(c *mongo.Client) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request){
+		// find filename here
+		// know the filename
+		// delete the file from folder 
+		// delete in the database
+		// return something
+		paths:= strings.Split(r.URL.Path, "/") 
+		collection := c.Database("tritonstorage").Collection("fileinfo")
+		isSuccess, filename := mydb.GetFilenameById(paths[3], collection)
+		if !isSuccess{
+			log.Println("database error cannot find the file or non exist")
+		}
+		err := os.Remove("./filestorage/"+filename)
+		if err != nil{
+			log.Println(err)
+		}
+
+		mydb.DeleteFile(paths[3], collection)
+		w.Write([]byte("delete successfully"))
+	}
+}
+func notFound(app *rice.Box) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request){
+		w.WriteHeader(http.StatusNotFound)
+		indexFile, err := app.Open("index.html")
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		http.ServeContent(w, r, "index.html", time.Time{}, indexFile)
+	}
+}
 func downloadFile(c *mongo.Client) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request){
 		log.Println(r.URL.Path)
@@ -123,6 +192,7 @@ func getAllFile(c *mongo.Client) http.HandlerFunc {
 		}
 		jsonData, _ := json.Marshal(files)
 		//log.Println(string(jsonData))
+		log.Println("okok")
 		fmt.Fprintf(w, string(jsonData))
 	}
 }

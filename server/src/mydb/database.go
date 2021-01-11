@@ -92,3 +92,13 @@ func GetFilenameById(_id string, c *mongo.Collection) (bool, string) {
 	log.Println("found file by id :" + _id + "name: "+result["filename"].(string))
 	return true, result["filename"].(string)
 }
+
+func DeleteFile(_id string, c *mongo.Collection) (bool) {
+	objID, _ := primitive.ObjectIDFromHex(_id)
+	_, err := c.DeleteOne(context.TODO(), bson.D{{"_id", objID}})
+	if err != nil{
+		log.Println(err)
+		return false
+	}
+	return true
+}
