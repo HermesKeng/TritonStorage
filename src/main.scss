@@ -1,6 +1,7 @@
 $theme-colors: (
   "info": tomato,
-  "danger": teal,
+  "triton": #182b49,
+  "triton-secondary": #ffcc00,
 );
 
 .navbar {
@@ -18,5 +19,34 @@ $theme-colors: (
 
 #main-img {
   max-width: 40%;
+}
+.login-col {
+  margin-top: 0.6em;
+}
+
+.first {
+  margin-top: 1em;
+}
+.first .btn {
+  margin-top: 0.65em;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.notFound {
+  margin-top: 2em;
+}
+
+#notfound-img {
+  width: 15%;
+  margin-top: 1.5em;
+}
+
+#back404-btn {
+  width: 8em;
+  margin-top: 1em;
 }
 @import "~bootstrap/scss/bootstrap";
