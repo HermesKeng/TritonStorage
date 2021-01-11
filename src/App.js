@@ -6,7 +6,8 @@ import "./main.scss";
 import Header from "./components/Header";
 import HomeGuest from "./components/HomeGuest";
 import Home from "./components/Home";
-
+import UploadForm from "./components/UploadForm";
+import NotFound from "./components/NotFound";
 function App() {
   const [loggedIn, setLoggedIn] = useState(
     Boolean(localStorage.getItem("tritonStorageToken"))
@@ -28,11 +29,13 @@ function App() {
               )}
             </Route>
             <Route path="/user" exact>
-              {loggedIn ? (
-                <Home setLoggedIn={setLoggedIn} />
-              ) : (
-                <HomeGuest setLoggedIn={setLoggedIn} />
-              )}
+              <Home setLoggedIn={setLoggedIn} />
+            </Route>
+            <Route path="/newfile" exact>
+              <UploadForm />
+            </Route>
+            <Route>
+              <NotFound />
             </Route>
           </Switch>
         </div>
