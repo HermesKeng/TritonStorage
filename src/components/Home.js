@@ -37,6 +37,33 @@ function Home(props) {
     }
     fetchPostData();
   }, []);
+  function deleteItem(id) {
+    var currPosts = posts;
+    for (var i = 0; i < currPosts.length; i++) {
+      if (currPosts[i].Id == id) {
+        currPosts.splice(i, 1);
+        setPosts([...currPosts]);
+        return;
+      }
+    }
+  }
+
+  const renderTableBody = () => {
+    return (
+      posts &&
+      posts.map((file, index) => (
+        <FileInfo
+          id={file.Id}
+          idx={index}
+          key={file.Id}
+          filename={file.Filename}
+          type={file.Type}
+          version={1}
+          delItem={deleteItem}
+        />
+      ))
+    );
+  };
   if (isLoading) {
     return <LoadingDotIcon />;
   } else {
@@ -74,16 +101,7 @@ function Home(props) {
                   <th scope="col"></th>
                 </tr>
               </thead>
-              {posts.map((file, index) => (
-                <FileInfo
-                  id={file.Id}
-                  idx={index}
-                  key={file.Id}
-                  filename={file.Filename}
-                  type={file.Type}
-                  version={1}
-                />
-              ))}
+              {renderTableBody()}
             </table>
           </div>
           <div className="col-1"></div>

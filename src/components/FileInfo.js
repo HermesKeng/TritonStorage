@@ -40,6 +40,7 @@ function FileInfo(props) {
       } catch (error) {}
     }
     deleteData();
+    props.delItem(e.target.id);
   };
   return (
     <>
