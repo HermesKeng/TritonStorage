@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import Axios from "axios";
 function ComponentName() {
   const [fileData, setFile] = useState("");
+  const history = useHistory();
   function handleUpload(e) {
     setFile(e.target.files[0]);
   }
@@ -24,6 +25,7 @@ function ComponentName() {
         },
       }
     );
+    history.push(`/`);
   }
   return (
     <>
